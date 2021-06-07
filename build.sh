@@ -14,6 +14,8 @@ else
     HOST="docker.io"
 fi
 
+manifest_only="no"
+
 builder="docker"
 build_command="build"
 
@@ -27,6 +29,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --no-cache)
             no_cache="--no-cache"
+            shift
+            ;;
+        --manifest-only)
+            manifest_only="yes"
             shift
             ;;
         --*)
@@ -44,6 +50,10 @@ if [[ $# -gt 0 ]]; then
     archs=$@
 else
     archs=${ARCHS[@]}
+fi
+
+if [[ "${manifest_only}" = "yes" ]]; then
+    archs=""
 fi
 
 # Get the number of cores, defaulting to 2 if unable to get.
