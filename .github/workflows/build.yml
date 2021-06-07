@@ -7,29 +7,12 @@ on:
   pull_request:
 
 jobs:
-  build-master-amd64:
-    runs-on: ubuntu-20.04
-    steps:
-      - uses: actions/checkout@v2
-      # This enables the ability to execute Arm binaries for us.
-      - uses: crazy-max/ghaction-docker-buildx@v3
-        with:
-          version: latest
-      - name: Docker Hub Login
-        uses: docker/login-action@v1
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_TOKEN }}
-      - run: ../build.sh amd64
-        working-directory: master
-      - run: docker push jasonish/suricata:master-amd64
-
-  build-one:
+  build-versions:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
         arch: [amd64, arm32v6, arm64v8]
-        version: [master, "6.0", "5.0"]
+        version: ["6.0", "5.0"]
       fail-fast: false
     steps:
       - uses: actions/checkout@v2
@@ -39,8 +22,28 @@ jobs:
       - run: bash -x ../build.sh ${{ matrix.arch }}
         working-directory: ${{ matrix.version }}
 
+  build-master:
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        arch: [amd64, arm32v6, arm64v8]
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v2
+      - uses: crazy-max/ghaction-docker-buildx@v3
+        with:
+          version: latest
+      - run: bash -x ../build.sh ${{ matrix.arch }}
+        working-directory: master
+      - name: Docker Hub Login
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+      - run: docker push jasonish/suricata:master-${{ matrix.arch }}
+
   push:
     runs-on: ubuntu-20.04
-    needs: [build-one]
+    needs: [build-master]
     steps:
       - run: echo "All containers built."
